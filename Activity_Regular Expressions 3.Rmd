@@ -1,0 +1,104 @@
+---
+title: "Activity_Regular expressions 3"
+author: "Xin Gao"
+date: "04/12/2022"
+output: html_notebook
+---
+
+### Load packages and data
+
+### Create New variable year Based on First Four Digits of tourny_id
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+dat <- read_csv("Data_RegEx3.csv")
+dat <- dat %>%
+  mutate(year = str_sub(tourney_id, 1, 4))
+head(dat, n = 3)
+tail(dat, n = 3)
+```
+
+### Separate ‘score’ variable into 5 columns based on ‘score’ results
+
+```{r warning=FALSE}
+dat <- dat %>%
+  separate(score, c("Set.1", "Set.2", "Set.3", "Set.4", "Set.5"), 
+           remove = FALSE, sep = " ") %>%
+  select(c(1,2,3,4,5,11,12,6,7,8,9,10)) %>%
+  mutate(Set.1 = str_sub(Set.1, 1, 3),
+         Set.2 = str_sub(Set.2, 1, 3),
+         Set.3 = str_sub(Set.3, 1, 3),
+         Set.4 = str_sub(Set.4, 1, 3),
+         Set.5 = str_sub(Set.5, 1, 3))
+head(dat, n = 3)
+tail(dat, n = 3)
+```
+
+### Create new variable ’sets.played’by counting non-NAs in Set.1 through Set.5
+
+```{r}
+dat$setsplayed <- apply(dat[, 8:12], 1, function(x){sum(!is.na(x))})
+dat <- dat %>%
+  select(-c(8:12))
+head(dat, n = 3)
+tail(dat, n = 3)
+```
+
+### Create Density Plot of Minutes Played by Number of Sets Played
+
+```{r warning=FALSE}
+dat %>% 
+  ggplot(aes(minutes, fill = as.factor(setsplayed), col = as.factor(setsplayed))) + 
+  labs(x = "Minutes Played", fill = "Sets Played", col = "Sets Played",
+       title = "Density Plots of Minutes Played Per Number of Sets Played") + 
+  geom_density() + 
+  theme(legend.position = "top", plot.title = element_text(hjust = 0.5))
+```
+
+Conclusion: The graph shows the corresponding time of different sets of tennis matches. It can be seen from the graph that the time of tennis matches increases with the increase of the number of games.
+
+### Create Boxplot of Winner’s Age by Tournament Name
+```{r}
+dat <- dat %>%
+   mutate(tourney_name = ifelse(tourney_name == "Us Open", "US Open", tourney_name))
+dat %>%
+  ggplot(aes(tourney_name, winner_age, col = tourney_name)) + 
+  geom_boxplot() + 
+  labs(x = "Tournament Name", y = "Age of Winner", 
+       title = "Boxplot Age of Winner in Grand Slam Events")
+```
+
+Conclusion: The modified graph shows the age distribution of the winners of the four Grand Slam tennis matches. It can be seen from the graph that the age distribution of the winners of the four Grand Slam tennis matches is relatively similar.
+
+### Counts of Matches Won by Top 5 IOC Membership per Tournament
+
+```{r}
+dat %>%
+  group_by(tourney_name, winner_ioc) %>%
+  summarise(total = n()) %>%
+  group_by(tourney_name) %>% 
+  top_n(n = 5, wt = total) %>%
+  ggplot(aes(winner_ioc, total)) + geom_point() + 
+  facet_grid(tourney_name ~ .) + 
+  labs(x = "Winners Olympic Membership", y = "Tournaments Won", 
+       title = "Top 5 Olympic Memberships per Tournament") + 
+  theme_bw()
+```
+
+Conclusion: The graph shows the five countries with the most wins in the four Grand Slam tennis tournaments. From the graph, it can be seen that Spain, France and Germany are all among the top five winners in the four Grand Slam tennis tournaments.
+
+### Counts of Matches Won by Top 2 IOC Membership per Year
+
+```{r}
+dat %>% 
+  group_by(winner_ioc, year) %>%
+  summarise(total = n()) %>%
+  group_by(year) %>% 
+  top_n(n = 2, wt = total) %>%
+  ggplot(aes(year, total, col = winner_ioc)) + geom_point() + 
+  labs(x = "Year", y = "Tournaments Won", 
+       title = "Top 2 Olympic Memberships per Year") + 
+  theme_bw()
+```
+
+Conclusion: The map shows the two countries with the most winners in different years. France has the best results in different years, followed by Spain and then the United States.
